@@ -116,7 +116,7 @@ export default function Booking() {
 
     // 2. ZAŠTITA: Rate Limit (Sprečava više od 1 bookinga u 5 minuta sa istog browsera)
     const lastBooking = localStorage.getItem("last_booking_timestamp");
-    if (lastBooking && Date.now() - parseInt(lastBooking) < 300000) {
+    if (lastBooking && Date.now() - parseInt(lastBooking) < 86400000) {
       setMessage({ type: "error", text: "Too many attempts. Please wait 5 minutes." });
       return;
     }
