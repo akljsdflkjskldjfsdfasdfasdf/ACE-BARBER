@@ -420,7 +420,7 @@ export default function Booking() {
                 <div className="font-black uppercase tracking-wider text-sm">
                   Beard Trim
                 </div>
-                <div className="text-xs opacity-70 mt-1">+15min</div>
+                
               </div>
             </button>
 
