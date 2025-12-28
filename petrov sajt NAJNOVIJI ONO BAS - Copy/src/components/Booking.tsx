@@ -99,7 +99,7 @@ export default function Booking() {
         return { disabled: true };
       }
     }
-    return { disabled: true };
+    return { disabled: false };
   };
 
   useEffect(() => {
