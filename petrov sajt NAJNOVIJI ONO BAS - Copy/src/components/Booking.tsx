@@ -33,7 +33,7 @@ export default function Booking() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [tempTime, setTempTime] = useState(""); // privremeni izbor u modalu
+  const [tempTime, setTempTime] = useState("");
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -43,6 +43,13 @@ export default function Booking() {
   const [bookedSlots, setBookedSlots] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  const formatDateISO = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
   const getAvailableSlotsForDate = (dateString: string) => {
     if (!dateString) return [];
@@ -55,6 +62,45 @@ export default function Booking() {
   };
 
   const currentSlots = getAvailableSlotsForDate(selectedDate);
+
+  // LOGIKA ZA PROVERU PROŠLOG VREMENA
+  const isTimeInPast = (timeSlot: string) => {
+    const now = new Date();
+    const todayStr = formatDateISO(now);
+
+    // Ako izabrani datum nije danas, termin nije u prošlosti (stari datumi su već blokirani u kalendaru)
+    if (selectedDate !== todayStr) return false;
+
+    const [slotHours, slotMinutes] = timeSlot.split(":").map(Number);
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    if (slotHours < currentHours) return true;
+    if (slotHours === currentHours && slotMinutes <= currentMinutes)
+      return true;
+
+    return false;
+  };
+
+  const checkSlotAvailability = (time: string) => {
+    // 1. Da li je već zauzeto u bazi?
+    const isBooked = bookedSlots.has(time);
+    if (isBooked) return { disabled: true };
+
+    // 2. Da li je termin već prošao (ako je danas)?
+    if (isTimeInPast(time)) return { disabled: true };
+
+    // 3. Logika za bradu (zahteva dva slobodna termina zaredom)
+    if (hasBeard) {
+      const index = currentSlots.indexOf(time);
+      const nextSlot = currentSlots[index + 1];
+      // Proverava da li sledeći slot postoji, da li je slobodan i da li je i on u budućnosti
+      if (!nextSlot || bookedSlots.has(nextSlot) || isTimeInPast(nextSlot)) {
+        return { disabled: true };
+      }
+    }
+    return { disabled: false };
+  };
 
   useEffect(() => {
     if (selectedDate) {
@@ -80,18 +126,6 @@ export default function Booking() {
     const maxDate = new Date();
     maxDate.setDate(today.getDate() + 30);
     return date < today || date > maxDate;
-  };
-
-  const checkSlotAvailability = (time: string) => {
-    const isBooked = bookedSlots.has(time);
-    if (isBooked) return { disabled: true };
-
-    if (hasBeard) {
-      const index = currentSlots.indexOf(time);
-      const nextSlot = currentSlots[index + 1];
-      if (!nextSlot || bookedSlots.has(nextSlot)) return { disabled: true };
-    }
-    return { disabled: false };
   };
 
   const handleConfirmTime = () => {
@@ -140,12 +174,6 @@ export default function Booking() {
       setMessage({ type: "error", text: "Booking error. Try again." });
     }
     setLoading(false);
-  };
-
-  const formatDateISO = (date: Date) => {
-    const offset = date.getTimezoneOffset();
-    const adjustedDate = new Date(date.getTime() - offset * 60 * 1000);
-    return adjustedDate.toISOString().split("T")[0];
   };
 
   const getDaysInMonth = (year: number, month: number) =>
@@ -257,7 +285,7 @@ export default function Booking() {
                       setSelectedTime("");
                       setTempTime("");
                       setShowCalendar(false);
-                      setShowTimePicker(true); // automatski otvori time picker
+                      setShowTimePicker(true);
                     }}
                     className={`aspect-square flex items-center justify-center text-sm rounded-xl transition-all ${
                       disabled
@@ -278,7 +306,7 @@ export default function Booking() {
         </div>
       )}
 
-      {/* TIME PICKER MODAL sa CONFIRM dugmetom */}
+      {/* TIME PICKER MODAL */}
       {showTimePicker && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm">
           <div className="relative max-w-md w-full bg-neutral-950 border border-neutral-800 p-8 rounded-3xl shadow-2xl">
@@ -316,7 +344,7 @@ export default function Booking() {
                       isSelected
                         ? "bg-white text-black border-white shadow-xl scale-105"
                         : disabled
-                        ? "bg-neutral-900/30 text-neutral-600 border-neutral-800 cursor-not-allowed"
+                        ? "bg-neutral-900/30 text-neutral-800 border-neutral-900 cursor-not-allowed opacity-40"
                         : "bg-neutral-900 text-white border-neutral-700 hover:border-white hover:bg-neutral-800"
                     }`}
                   >
@@ -332,7 +360,6 @@ export default function Booking() {
               </p>
             )}
 
-            {/* CONFIRM DUGME */}
             <button
               onClick={handleConfirmTime}
               disabled={!tempTime}
@@ -374,7 +401,6 @@ export default function Booking() {
             className="bg-neutral-900 border border-neutral-800 p-5 w-full outline-none focus:border-white rounded-2xl transition-all"
           />
 
-          {/* ADD-ONS - odlična vidljivost teksta */}
           <div className="grid grid-cols-2 gap-4">
             <button
               type="button"
@@ -414,7 +440,6 @@ export default function Booking() {
             </button>
           </div>
 
-          {/* DATE SELECTOR */}
           <button
             type="button"
             onClick={() => setShowCalendar(true)}
@@ -441,7 +466,6 @@ export default function Booking() {
             <CalendarIcon className="w-6 h-6 text-neutral-500 group-hover:text-white" />
           </button>
 
-          {/* TIME DISPLAY */}
           <div className="w-full bg-neutral-900 border border-neutral-800 p-5 flex items-center justify-between rounded-2xl">
             <div className="flex flex-col text-left">
               <span className="text-[10px] text-neutral-500 uppercase font-black mb-1">
