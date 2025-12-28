@@ -91,14 +91,7 @@ export default function Booking() {
     if (isTimeInPast(time)) return { disabled: true };
 
     // 3. Logika za bradu (zahteva dva slobodna termina zaredom)
-    if (hasBeard) {
-      const index = currentSlots.indexOf(time);
-      const nextSlot = currentSlots[index + 1];
-      // Proverava da li sledeći slot postoji, da li je slobodan i da li je i on u budućnosti
-      if (!nextSlot || bookedSlots.has(nextSlot) || isTimeInPast(nextSlot)) {
-        return { disabled: true };
-      }
-    }
+   
     return { disabled: false };
   };
 
